@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #imageContainer {
+            margin-top: 20px;
+        }
+        #loadingIndicator {
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Image Generator</h1>
+    
+    <label for="prompt">Enter Main Prompt:</label>
+    <input type="text" id="prompt" placeholder="Enter your main prompt...">
+    <br>
+    <label for="negPrompt">Edit Negative Prompt:</label>
+    <textarea id="negPrompt" placeholder="Edit the negative prompt...">disfigured face, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, acnes, skin blemishes, age spot, (ugly:1.331), (duplicate:1.331), (morbid:1.21), (mutilated:1.21), (tranny:1.331), mutated hands, (poorly drawn hands:1.5), blurry, (bad anatomy:1.21), (bad proportions:1.331), extra limbs, (disfigured:1.331), (missing arms:1.331), (extra legs:1.331), (fused fingers:1.61051), (too many fingers:1.61051), (unclear eyes:1.331), lowers, bad hands, missing fingers, extra digit,bad hands, missing fingers, (((extra arms and legs))),skin irregularities,amputated arms,amputated legs, bad eyes, inhuman</textarea>
+    <br>
+    <button onclick="generateImage()">Generate Image</button>
+    <button onclick="saveImage()">Save Image</button>
+    <div id="loadingIndicator">Generating image...</div>
+    
+    <div id="imageContainer"></div>
+
+    <script>
+        function generateImage() {
+            const mainPromptInput = document.getElementById('prompt').value;
+            const negPromptInput = document.getElementById('negPrompt').value;
+
+            // Show loading indicator
+            document.getElementById('loadingIndicator').style.display = 'block';
+
+            // API endpoint and request body
+            const apiUrl = 'https://sd.cuilutech.com/sdapi/turbo/txt2img';
+            const requestBody = {
+                "negative_prompt": negPromptInput,
+                "prompt": mainPromptInput,
+                "source": "sdxlturbo.ai"
+            };
+
+            // Fetch request to the API
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading indicator
+                document.getElementById('loadingIndicator').style.display = 'none';
+
+                if (data.code === 200) {
+                    // Display the generated image
+                    const imageContainer = document.getElementById('imageContainer');
+                    imageContainer.innerHTML = `<img src="${data.data.image_url}" alt="Generated Image">`;
+                    // Store the image URL for later use
+                    imageContainer.dataset.imageUrl = data.data.image_url;
+                } else {
+                    alert('Image generation failed. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+
+        
+
+        function saveImage() {
+    const imageContainer = document.getElementById('imageContainer');
+    const imageUrl = imageContainer.dataset.imageUrl;
+
+    if (imageUrl) {
+        // Create a canvas element to draw the image
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        const image = new Image();
+
+        // Set the crossOrigin attribute to avoid CORS issues
+        image.crossOrigin = 'anonymous';
+
+        // Set the image source to the generated image URL
+        image.src = imageUrl;
+
+        image.onload = () => {
+            // Set canvas dimensions to match the image
+            canvas.width = image.width;
+            canvas.height = image.height;
+
+            // Draw the image on the canvas
+            context.drawImage(image, 0, 0);
+
+            // Convert the canvas content to a data URL
+            const dataUrl = canvas.toDataURL('image/png');
+
+            // Create a hidden link element
+            const downloadLink = document.createElement('a');
+            downloadLink.style.display = 'none';
+            document.body.appendChild(downloadLink);
+
+            // Set the href attribute to the data URL
+            downloadLink.href = dataUrl;
+            downloadLink.download = 'generated_image.png';
+
+            // Trigger a click to download the image
+            downloadLink.click();
+
+            // Remove the hidden link element
+            document.body.removeChild(downloadLink);
+        };
+    } else {
+        alert('No image to save. Please generate an image first.');
+    }
+}
+
+    </script>
+</body>
+</html>
